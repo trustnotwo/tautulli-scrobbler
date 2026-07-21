@@ -133,9 +133,33 @@ Playback Resume:
 
 Save. Play a song in Plex, let it get past 50%, stop it, and check your Last.fm profile. Tautulli's Notification Logs (gear icon → View Logs) show every time the script fires if you need to debug.
 
+## Editing the artist allowlist
+
+To match Last.fm's artist pages, the script strips featured artists by cutting the name at the first `feat.`, `ft.`, `featuring`, comma, or ampersand. That works for the common `Artist feat. Someone` case, but it would also mangle artists whose names legitimately contain a comma or ampersand — `Tyler, The Creator` would scrobble as just `Tyler`, and `Earth, Wind & Fire` as just `Earth`.
+
+To prevent that, the script keeps an allowlist called `KNOWN_ARTISTS` near the top of `scrobble_plex.py`. Any name on it is left intact. It's already seeded with a batch of common comma/ampersand acts, and adding your own is a one-line edit:
+
+```python
+KNOWN_ARTISTS = {
+    "tyler, the creator",
+    "earth, wind & fire",
+    # ...add your artist here, lowercase, on its own line:
+    "florence + the machine",
+}
+```
+
+A few things to keep in mind:
+
+- **Lowercase it.** Matching is case-insensitive, but every entry in the set must be lowercase to work.
+- **Match how Plex tags it.** The comparison is otherwise exact, so the entry has to match the artist name exactly as it appears in your library — right down to spacing and punctuation. If an artist still gets chopped, check the actual tag in Plex and copy it from there.
+- **Trailing features still get stripped.** A listed artist with a real feature — `Tyler, The Creator feat. Kali Uchis` — still scrobbles as `Tyler, The Creator`. You only need the base name on the list.
+- **No restart needed.** Tautulli runs the script fresh on every playback event, so edits take effect on the next track — unlike secret changes, which need a container restart.
+
+Names that use other separators — like `+` in `Florence + the Machine`, `/` in `AC/DC`, or `!` in `Panic! at the Disco` — are never split in the first place, so they don't need to be on the list.
+
 ## Behavior notes
 
 - Nothing scrobbles below 50% progress — skipped tracks stay off your profile
-- Featured artists get stripped, so "Artist feat. Someone" scrobbles as "Artist" (matches Last.fm's artist pages)
+- Featured artists get stripped, so "Artist feat. Someone" scrobbles as "Artist" (matches Last.fm's artist pages) — except for names on the allowlist above
 - Pausing clears Now Playing; resuming brings it back
 - If you change a secret, restart the container
